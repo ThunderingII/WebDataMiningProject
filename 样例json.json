@@ -1,0 +1,14 @@
+[
+	{
+		algorithm='svm',
+		f1=0.99,
+		classNum=1,
+		confidence=1
+	},
+	{
+		algorithm='lr',
+		f1=0.98,
+		classNum=0,
+		confidence=0.77
+	}
+]
