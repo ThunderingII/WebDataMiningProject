@@ -100,6 +100,24 @@ def __confidence_compute(data):
     return clf.predict([x])[0]
 
 
+
+
+
+def get_result(msg):
+    r = msg
+    global clf
+    if clf == None:
+        clf = joblib.load('svm.model')
+        read_param('svm-param.txt')
+    x = [0 for i in range(size)]
+    for i in range(2, len(r)):
+        term = r[i]
+        if term in char_position:
+            x[char_position[term]] += 1
+    className = clf.predict([x])[0]
+    return 'svm', 0.986959, className, className
+
+
 def predict(filename):
     file = open(filename, encoding='utf-8')
     tp = 0
@@ -135,5 +153,5 @@ def predict(filename):
 if __name__ == '__main__':
     # train('train.txt')
     # read_param('train-result.txt')
-    print(__confidence_compute('您好！我是福州融汇温泉城的高级置业顾问  彭磊，近期我们项目有做些活动，且价位非常优惠，接待点地址：福州市晋安区桂湖。也希望您继续关注'))
-    predict('test.txt')
+    print(get_result('您好！我是福州融汇温泉城的高级置业顾问  彭磊，近期我们项目有做些活动，且价位非常优惠，接待点地址：福州市晋安区桂湖。也希望您继续关注'))
+    # predict('test.txt')

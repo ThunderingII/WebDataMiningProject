@@ -136,6 +136,20 @@ def predict(filename):
     recall = tp / (tp + fn)
     print('recall:%f    precision:%f\nf1:%f' % (recall, precision, recall * precision * 2 / (recall + precision)))
 
+def get_result(msg):
+    r = msg
+    global clf
+    if clf == None:
+        clf = joblib.load('lr.model')
+        read_param('lr-param.txt')
+    x = [0 for i in range(size)]
+    for i in range(2, len(r)):
+        term = r[i]
+        if term in char_position:
+            x[char_position[term]] += 1
+    className = clf.predict([x])[0]
+    return 'lr', 0.992062, className, className
+
 
 if __name__ == '__main__':
     train('train.txt')

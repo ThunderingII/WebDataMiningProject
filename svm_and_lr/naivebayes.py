@@ -113,6 +113,7 @@ def read_param(filename):
 def __confidence_compute(data):
     global pr_ad_prior
     global pr_non_prior
+
     r = jieba.lcut(data)
     # r = data
     ad_score = 0
@@ -137,7 +138,42 @@ def __confidence_compute(data):
     return score
 
 
-def test(filename):
+def get_result(msg):
+    global pr_ad_prior
+    global pr_non_prior
+
+    if ad_pr == None or len(ad_pr) == 0:
+        read_param('train-result.txt')
+
+    r = jieba.lcut(msg)
+    # r = data
+    ad_score = 0
+    non_score = 0
+
+    score = 1
+    for i in range(2, len(r)):
+        term = r[i]
+        if term in ad_pr:
+            ad_score = ad_pr[term]
+        else:
+            ad_score = pr_ad_avg
+        if term in non_pr:
+            non_score = non_pr[term]
+        else:
+            non_score = pr_non_avg
+        score *= (ad_score / non_score)
+
+    score *= (pr_ad_prior / pr_non_prior)
+
+    if score > 10000000:
+        className = 1
+    else:
+        className = 0
+
+    return 'naive_bayes', 0.980978, className, 1 / (1 + math.exp(10000000 - score))
+
+
+def predict(filename):
     file = open(filename, encoding='utf-8')
     tp = 0
     tn = 0
@@ -171,6 +207,7 @@ def test(filename):
 
 if __name__ == '__main__':
     # write_param('train.txt')
-    read_param('train-result.txt')
-    print(__confidence_compute('您好！我是福州融汇温泉城的高级置业顾问  彭磊，近期我们项目有做些活动，且价位非常优惠，接待点地址：福州市晋安区桂湖。也希望您继续关注'))
-    test('test.txt')
+    # read_param('train-result.txt')
+    # print(__confidence_compute('您好！我是福州融汇温泉城的高级置业顾问  彭磊，近期我们项目有做些活动，且价位非常优惠，接待点地址：福州市晋安区桂湖。也希望您继续关注'))
+    print(get_result('您好！我是福州融汇温泉城的高级置业顾问  彭磊，近期我们项目有做些活动，且价位非常优惠，接待点地址：福州市晋安区桂湖。也希望您继续关注'))
+    # predict('test.txt')
