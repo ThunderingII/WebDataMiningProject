@@ -53,10 +53,14 @@
                     console.log(data);
                     json_res = data;
                     for (var i = 0; i < json_res.length; i++) {
-                        var row = '<tr class="' + typeMap[i % 4] + '"><td>' + json_res[i].algorithm + '</td><td>' + json_res[i].classNum + '</td><td>' + json_res[i].confidence + '</td><td>' + json_res[i].f1 + '</td><tr>';
+                        // var row = '<tr class="' + typeMap[i % 4] + '"><td>' + json_res[i].algorithm + '</td><td>' + json_res[i].classNum + '</td><td>' + json_res[i].confidence + '</td><td>' + json_res[i].f1 + '</td><tr>';
+                        var row = '<tr class="' + typeMap[i % 4] + '"><td>' + json_res[i].algorithm + '</td><td>' + json_res[i].classNum + '</td><td>' + json_res[i].f1 + '</td><tr>';
                         $('#result_table').append(row);
                     }
                 });
+
+            alert("请稍后，6种算法正在帮您检测，估计需要5秒")
+
             // var t = document.createElement('table');
             // t.attributes['class'] = 'table table-bordered';
             // var json_res = [{'algorithm': 'svm', 'f1': 0.986959, 'classNum': 1, 'confidence': 1}, {
@@ -112,9 +116,9 @@
                         <th>
                             短信类别/0-正常，1-垃圾
                         </th>
-                        <th>
-                            置信度
-                        </th>
+                        <!--<th>-->
+                        <!--置信度-->
+                        <!--</th>-->
                         <th>
                             算法f1值
                         </th>

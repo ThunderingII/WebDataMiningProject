@@ -22,7 +22,7 @@ clf = None
 
 
 def train(filename):
-    char_file = open('57M.txt', encoding='utf-8')
+    char_file = open('带标签短信.txt', encoding='utf-8')
     size = 0
     for line in char_file:
         for c in line:
