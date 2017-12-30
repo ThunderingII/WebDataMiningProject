@@ -1,7 +1,8 @@
+# -*- coding:utf-8 -*-
 import jieba
 
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.naive_bayes import MultinomialNB
@@ -14,6 +15,8 @@ from sklearn.externals import joblib
 
 import numpy as np
 import scipy as sp
+
+import time
 
 class stopword(object):
 	def __init__(self, file):
@@ -62,11 +65,13 @@ class Data(object):
 			#print("Loading data %d:%s" % (i,label),end="\r" )
 			#i+=1
 		#print("Finish: Data Loading.")
-
-def DecisionTreeClassifyTfidf(data_file, stop=None, extract_features=False):
+	
+def DecisionTreeClassifyTfidf(data_file, stop=None):
 	data = Data(data_file, stop)
-
-	# 统计每个词的TF-IDF
+	#data=joblib.load("ALLData.joblibdump")
+	print("Finish Data Loading!")
+	
+	# TF-IDF模块
 	vectorizer = TfidfVectorizer(max_df=0.5,
 								 max_features=3000,
 								 min_df=2,
@@ -74,65 +79,86 @@ def DecisionTreeClassifyTfidf(data_file, stop=None, extract_features=False):
 								 lowercase=False,
 								 decode_error='ignore',
 								 analyzer=str.split).fit(data.data)
-	train_x, test_x, train_y, test_y = train_test_split(data.data, data.label, test_size=0.2)
-	train_x = vectorizer.transform(train_x)
-	test_x = vectorizer.transform(test_x)
 	joblib.dump(vectorizer,"tfidf.model")
-	print("Finising: TF-TDF")
-
+	#vectorizer=joblib.load("tfidf.model")
 	
-	DecisionTree = DecisionTreeClassifier(criterion="entropy",
-										  splitter="best",
-										  max_depth=None,
-										  min_samples_split=2,
-										  min_samples_leaf=2)
-	print("Finishing: DecisionTree")
+	X=data.data
+	Y=data.label
+	FoldNummer=5		# 分成的组数
+	kf=KFold(n_splits=FoldNummer)
+	kf.get_n_splits(X)
+	
+	
+	print(kf)
+	i=0
+	maxF=0
+	maxFi=-1
+	maxFtimeCost=0
 
-	# 训练加上测评
-	# DecisionTree.fit(train_x, train_y)
-	# print("使用词袋模型做为文本特征，并使用决策树算法的分类准确率为：", end=' ')
-	# print(DecisionTree.score(test_x, test_y))
-	# 训练加上测评
-	print("Waiting for Training.........................")
-	DecisionTree.fit(train_x, train_y)
-	joblib.dump(DecisionTree, 'dt.model')
-	print("Finishing: Save DecisionTree")
-	#with open("1.tree.dot", 'w') as f:
-	#	f = tree.export_graphviz(DecisionTree, out_file=f)
-	#print("\n使用TF-IDF模型做为文本特征，并使用决策树算法的分类F1值为：", end=' ')
-	precision, recall, thresholds = precision_recall_curve(test_y, DecisionTree.predict(test_x))
-	F1 = recall * precision * 2 / (recall + precision)
+	for train_index,test_index in kf.split(X):
+		i+=1
+		print("============= TestSet:",i," ===============")
+		# 数据集处理，统计每个词的TF-IDF 
+		#train_x,test_x=X[train_index],X[test_index]
+		#train_y,test_y=Y[train_index],Y[test_index]
+		train_x=[X[i] for i in train_index]
+		test_x=[X[i] for i in test_index]
+		train_y=[Y[i] for i in train_index]
+		test_y=[Y[i] for i in test_index]
+		
+		train_x = vectorizer.transform(train_x)
+		test_x = vectorizer.transform(test_x)
+		DecisionTree = DecisionTreeClassifier(criterion="entropy",
+											  splitter="best",
+											  max_depth=None,
+											  min_samples_split=2,
+											  min_samples_leaf=2)
+		print("Finish preprocessing")
+		# 训练
+		startTime=time.clock()
+		DecisionTree.fit(train_x, train_y)
+		endTime=time.clock()
+		timeCost=endTime-startTime
+		print("Finish Training! Time of training:",timeCost)
 
+		# 检验-模型表现 
+		answer = DecisionTree.predict_proba(test_x)[:,1]  
+		#precision, recall, thresholds = precision_recall_curve(test_y, answer)
+		#print("\n")
+		#print("Recall	 : ",recall)
+		#print("Precision  : ",precision)
+		#print("thresholds : ",thresholds)
+		
+		report = answer > 0.5  
+		print(classification_report(test_y, report, target_names = ['norm', 'spam'])) 
 
-	# 模型表现
-	#answer = DecisionTree.predict(test_x)#[:,1]  
-	answer = DecisionTree.predict_proba(test_x)[:,1]  
-	precision, recall, thresholds = precision_recall_curve(test_y, answer)
-	print("\n")
-	print("			   normal\t\tspam\t\tavg/total")
-	print("Recall	 : ",recall)
-	print("Precision  : ",precision)
-	print("F1		 : ",F1)
-	print("thresholds : ",thresholds)
-	report = answer > 0.5  
-	print(classification_report(test_y, report, target_names = ['norm', 'spam'])) 
+		predict_y = DecisionTree.predict(test_x)
+		PT=(predict_y == np.ones(len(predict_y)))
+		PN=(predict_y == np.zeros(len(predict_y)))
+		OT=(test_y == np.ones(len(test_y)))
+		ON=(test_y == np.zeros(len(test_y)))
+		FP = np.mean(PT & ON)
+		TP = np.mean(PT & OT)
+		FN = np.mean(PN & OT)
+		TN = np.mean(PN & ON)
+		
+		P = TP/(TP+FP)
+		R = TP/(TP+FN)
+		F = 2*P*R/(P+R)
 
-	predict_y = DecisionTree.predict(test_x)
-	p = np.mean(predict_y == test_y) 
-	print("average precision:", p)
-
-	if extract_features is True:
-		# 特征提取，提取词汇
-		words = vectorizer.get_feature_names()
-		feature_importance = DecisionTree.feature_importances_
-		word_importances_dict = dict(zip(words, feature_importance))
-
-		number = 0
-		for word, importance in sorted(word_importances_dict.items(), key=lambda val: val[1], reverse=True):
-			print(word, importance)
-			number += 1
-			if number == 200:
-				break
+		print("precision\t: ", P)
+		print("Recall\t\t: ", R)
+		print("F1-messure\t: ", F)
+		print("timecost\t: ", timeCost)
+		if F>maxF:
+			maxF=F
+			maxFi=i
+			maxFtimeCost=timeCost
+			# 模型保存
+			joblib.dump(DecisionTree, 'dt.model')
+			print("Save This DecisionTree!")
+	print("============ Result ==============")
+	print("Best Model:",maxFi,",its F1-messure:",maxFi,",its timecost:",maxFtimeCost)
 
 def get_result(msg):
 	ctfidf= joblib.load("tfidf.model")
@@ -144,10 +170,10 @@ def get_result(msg):
 	question_x = ctfidf.transform([content])
 	
 	className = clf.predict(question_x)
-	return 'TfIdf+decisionTree', 0.99, className[0], className[0]
+	return 'TfIdf+decisionTree', 0.990625, className[0], className[0]
 
 
 
 if __name__ == '__main__':
-	#DecisionTreeClassifyTfidf('./train.txt', './stopword.txt', extract_features=False)
+	DecisionTreeClassifyTfidf('./train.txt', './stopword.txt')
 	print(get_result('您好！我是福州融汇温泉城的高级置业顾问  彭磊，近期我们项目有做些活动，且价位非常优惠，接待点地址：福州市晋安区桂湖。也希望您继续关注'))
