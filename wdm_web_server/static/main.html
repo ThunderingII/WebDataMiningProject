@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>垃圾短信检测系统</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="http://cdn.static.runoob.com/libs/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <script src="http://cdn.static.runoob.com/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="http://cdn.static.runoob.com/libs/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script>
+        function runCheck() {
+            document.getElementById("tlb_res").innerHTML = '';
+            tmp_text = document.getElementById("ipt_txt").value;
+            if (tmp_text !== null && tmp_text !== undefined && tmp_text !== '') {
+                createTable();
+            }
+            else {
+                alert("请输入待检测短信");
+            }
+        }
+
+        function createTable() {
+            typeMap = ['success', 'error', 'warning', 'info'];
+
+            var t = document.createElement('table');
+            // t.attributes['class'] = 'table table-bordered';
+            var json_res = [{'algorithm': 'svm', 'f1': 0.986959, 'classNum': 1, 'confidence': 1}, {
+                'algorithm': 'lr',
+                'f1': 0.992062,
+                'classNum': 1,
+                'confidence': 1
+            }, {'algorithm': 'naive_bayes', 'f1': 0.980978, 'classNum': 1, 'confidence': 1.0}];
+            for (var i = 0; i < json_res.length; i++) {
+                var r = t.insertRow();
+                r.setAttribute('class', typeMap[i % 4]);
+
+                var c = r.insertCell();
+                c.innerHTML = json_res[i].algorithm;
+
+                c = r.insertCell();
+                c.innerHTML = json_res[i].classNum;
+
+                c = r.insertCell();
+                c.innerHTML = json_res[i].confidence;
+
+                c = r.insertCell();
+                c.innerHTML = json_res[i].f1;
+            }
+            document.getElementById('tlb_res').appendChild(t);
+            t.setAttribute('border', '1');
+            t.setAttribute('class', 'table table-bordered');
+        }
+    </script>
+
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row-fluid">
+        <div class="span12">
+            <h3>
+                垃圾短信检测系统
+            </h3>
+
+            <div class="input-group">
+                <input id="ipt_txt" type="text"
+                       class="form-control"
+                       placeholder="请输入待检测短信">
+                <span class="input-group-btn">
+					<button class="btn btn-default" type="button" onclick="runCheck()">开始检测</button>
+				</span>
+            </div><!-- /input-group -->
+
+            <p id="check_state">
+                检测状态
+            </p>
+
+            <div id="tlb_res"></div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
